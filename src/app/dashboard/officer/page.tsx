@@ -32,7 +32,7 @@ export default function OfficerDashboard() {
       .then(res => setProjects(res.data))
       .catch(() => router.push('/login'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   function logout() {
     localStorage.removeItem('token');
@@ -119,7 +119,7 @@ export default function OfficerDashboard() {
                           {p.title}
                         </Link>
                       </td>
-                      <td className="py-2 text-slate-400">{p.contractor_name || '—'}</td>
+                      <td className="py-2 text-slate-400">{p.contractor_name || 'N/A'}</td>
                       <td className="py-2">{formatCurrency(p.budget_allocated)}</td>
                       <td className="py-2">{formatCurrency(p.budget_spent)}</td>
                       <td className="py-2">

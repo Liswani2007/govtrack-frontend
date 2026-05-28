@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import api from '@/services/api';
 import { Project } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 
 const statusColors: Record<string, string> = {
@@ -53,9 +53,9 @@ export default function Home() {
           <h1 className="text-2xl font-bold text-slate-800">GovTrack</h1>
           <p className="text-sm text-slate-500">Public Finance Transparency Portal</p>
         </div>
-        <a href="/login" className="text-sm text-blue-600 hover:underline">
-          Officer / Auditor login →
-        </a>
+        <Link href="/login" className="text-sm text-blue-600 hover:underline">
+          Officer / Auditor login -&gt;
+        </Link>
       </div>
 
       {/* Stats */}
@@ -109,7 +109,7 @@ export default function Home() {
           <p className="text-slate-500">No projects found.</p>
         )}
         {filtered.map(project => (
-          <a href={`/projects/${project.id}`} key={project.id}>
+          <Link href={`/projects/${project.id}`} key={project.id}>
             <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">
@@ -145,7 +145,7 @@ export default function Home() {
                 </div>
               </CardContent>
             </Card>
-          </a>
+          </Link>
         ))}
       </div>
     </main>

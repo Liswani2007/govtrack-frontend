@@ -6,7 +6,6 @@ import Link from 'next/link';
 import api from '@/services/api';
 import { Project, Transaction } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 
 const statusColors: Record<string, string> = {
   active: 'bg-green-100 text-green-800',
@@ -14,6 +13,17 @@ const statusColors: Record<string, string> = {
   completed: 'bg-blue-100 text-blue-800',
   suspended: 'bg-red-100 text-red-800',
 };
+
+interface ProgressUpdate {
+  id: string;
+  project_id: string;
+  progress_percentage: number;
+  description: string | null;
+  image_url: string | null;
+  created_by: string;
+  verified_by: string | null;
+  created_at: string;
+}
 
 function formatCurrency(amount: number) {
   return `K ${amount.toLocaleString()}`;
@@ -23,16 +33,19 @@ export default function ProjectDetailPage() {
   const { id } = useParams();
   const [project, setProject] = useState<Project | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [progress, setProgress] = useState<ProgressUpdate[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!id) return;
     Promise.all([
       api.get(`/projects/${id}`),
-      api.get(`/transactions/project/${id}`)
-    ]).then(([projRes, txRes]) => {
+      api.get(`/transactions/project/${id}`),
+      api.get(`/progress/project/${id}`)
+    ]).then(([projRes, txRes, progRes]) => {
       setProject(projRes.data);
       setTransactions(txRes.data);
+      setProgress(progRes.data);
     }).catch(console.error)
       .finally(() => setLoading(false));
   }, [id]);
@@ -44,13 +57,16 @@ export default function ProjectDetailPage() {
   const spentPct = project.budget_allocated > 0
     ? ((project.budget_spent / project.budget_allocated) * 100).toFixed(1)
     : '0.0';
+  const latestProgress = progress.length > 0
+    ? progress[progress.length - 1].progress_percentage
+    : 0;
 
   return (
     <main className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
           <Link href="/projects">
-            <span className="text-slate-500 hover:text-slate-800 cursor-pointer text-sm">← Back to projects</span>
+            <span className="text-slate-500 hover:text-slate-800 cursor-pointer text-sm">Back to projects</span>
           </Link>
           <Link href="/">
             <h1 className="text-xl font-bold text-slate-800 cursor-pointer">GovTrack</h1>
@@ -76,7 +92,7 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* Budget cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Card>
             <CardHeader className="pb-1">
               <CardTitle className="text-sm text-slate-500 font-normal">Allocated</CardTitle>
@@ -106,22 +122,64 @@ export default function ProjectDetailPage() {
           </Card>
         </div>
 
-        {/* Timeline */}
-        <Card className="mb-8">
+        {/* Progress bar */}
+        <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-base">Timeline</CardTitle>
+            <CardTitle className="text-base">Project Completion</CardTitle>
           </CardHeader>
-          <CardContent className="flex gap-8 text-sm">
-            <div>
-              <p className="text-slate-500">Start date</p>
-              <p className="font-medium">{project.start_date}</p>
+          <CardContent>
+            <div className="flex justify-between text-sm text-slate-600 mb-2">
+              <span>Progress</span>
+              <span className="font-medium">{latestProgress}%</span>
             </div>
-            <div>
-              <p className="text-slate-500">Deadline</p>
-              <p className="font-medium">{project.deadline}</p>
+            <div className="w-full bg-gray-100 rounded-full h-3">
+              <div
+                className="h-3 rounded-full bg-blue-500 transition-all"
+                style={{ width: `${latestProgress}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-xs text-slate-400 mt-3">
+              <span>Start: {project.start_date}</span>
+              <span>Deadline: {project.deadline}</span>
             </div>
           </CardContent>
         </Card>
+
+        {/* Progress updates */}
+        {progress.length > 0 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-base">Progress Updates</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              {progress.map(u => (
+                <div key={u.id} className="border-b last:border-0 pb-4 last:pb-0">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-medium text-sm">{u.progress_percentage}% complete</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${u.verified_by ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                        {u.verified_by ? 'Verified' : 'Unverified'}
+                      </span>
+                      <span className="text-xs text-slate-400">
+                        {new Date(u.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                  {u.description && <p className="text-sm text-slate-500">{u.description}</p>}
+                  {u.image_url && (
+                    // Uploaded evidence can come from arbitrary storage providers.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={u.image_url}
+                      alt="Site photo"
+                      className="mt-2 rounded-lg max-h-48 object-cover"
+                    />
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Transactions */}
         <Card>
@@ -147,13 +205,15 @@ export default function ProjectDetailPage() {
                     <tr key={tx.id} className="border-b last:border-0">
                       <td className="py-2 capitalize">{tx.transaction_type}</td>
                       <td className="py-2 font-medium">{formatCurrency(tx.amount)}</td>
-                      <td className="py-2 text-slate-400">{tx.invoice_reference || '—'}</td>
+                      <td className="py-2 text-slate-400">{tx.invoice_reference || 'N/A'}</td>
                       <td className="py-2">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${tx.approved_by ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                          {tx.approved_by ? 'Approved' : 'Pending'}
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${tx.approved_at ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                          {tx.approved_at ? 'Approved' : 'Pending'}
                         </span>
                       </td>
-                      <td className="py-2 text-slate-400">{new Date(tx.timestamp).toLocaleDateString()}</td>
+                      <td className="py-2 text-slate-400">
+                        {new Date(tx.timestamp).toLocaleDateString()}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

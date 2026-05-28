@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import axios from 'axios';
 import api from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -60,7 +61,7 @@ export default function AuditorDashboard() {
       setTransactions(txRes.data);
     }).catch(() => router.push('/login'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   async function approveTransaction(id: string) {
     setApprovingId(id);
@@ -68,8 +69,11 @@ export default function AuditorDashboard() {
       await api.post(`/transactions/${id}/approve`, { approved: true });
       const txRes = await api.get('/transactions/');
       setTransactions(txRes.data);
-    } catch (err: any) {
-      alert(err.response?.data?.detail || 'Could not approve transaction.');
+    } catch (err: unknown) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.detail
+        : undefined;
+      alert(message || 'Could not approve transaction.');
     } finally {
       setApprovingId(null);
     }
@@ -204,8 +208,8 @@ export default function AuditorDashboard() {
                     <tr key={tx.id} className="border-b last:border-0">
                       <td className="py-2 capitalize">{tx.transaction_type}</td>
                       <td className="py-2 font-medium">{formatCurrency(tx.amount)}</td>
-                      <td className="py-2 text-slate-400">{tx.invoice_reference || '—'}</td>
-                      <td className="py-2 text-slate-400">{tx.description || '—'}</td>
+                      <td className="py-2 text-slate-400">{tx.invoice_reference || 'N/A'}</td>
+                      <td className="py-2 text-slate-400">{tx.description || 'N/A'}</td>
                       <td className="py-2 text-slate-400">
                         {new Date(tx.timestamp).toLocaleDateString()}
                       </td>

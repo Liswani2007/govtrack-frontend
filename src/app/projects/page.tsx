@@ -5,7 +5,6 @@ import Link from 'next/link';
 import api from '@/services/api';
 import { Project } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 
 const statusColors: Record<string, string> = {

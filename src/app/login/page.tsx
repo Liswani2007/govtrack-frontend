@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import api from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,7 +36,7 @@ export default function LoginPage() {
       } else {
         router.push('/projects');
       }
-    } catch (err: any) {
+    } catch {
       setError('Incorrect email or password.');
     } finally {
       setLoading(false);
@@ -47,7 +48,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-slate-800">GovTrack</CardTitle>
-          <p className="text-slate-500 text-sm">Staff login — officers and auditors only</p>
+          <p className="text-slate-500 text-sm">Staff login - officers and auditors only</p>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div>
@@ -65,7 +66,7 @@ export default function LoginPage() {
             <Input
               id="password"
               type="password"
-              placeholder="••••••••"
+              placeholder="********"
               value={password}
               onChange={e => setPassword(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleLogin()}
@@ -76,7 +77,7 @@ export default function LoginPage() {
             {loading ? 'Logging in...' : 'Login'}
           </Button>
           <p className="text-center text-sm text-slate-400">
-            <a href="/projects" className="hover:text-slate-600">← Back to public portal</a>
+            <Link href="/projects" className="hover:text-slate-600">Back to public portal</Link>
           </p>
         </CardContent>
       </Card>
